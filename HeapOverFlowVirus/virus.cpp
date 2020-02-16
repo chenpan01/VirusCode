@@ -20,7 +20,8 @@
 using namespace std;
 
 #define TIMER 1//计时器
-
+#define ALLOC_COUNT 10
+#define CHUNK_SIZE 0x190
 void DeleteSinFile(const char *path);
 
 void make_rubbish();
